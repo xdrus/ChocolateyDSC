@@ -9,8 +9,8 @@ function Get-TargetResource
 
     $versionInfo = Get-InstalledVersion $PackageName
 
-    if($versionInfo.count -lt 1) {        
-        $ensure = "Absent" 
+    if($versionInfo.count -lt 1) {
+        $ensure = "Absent"
     } else {
         $ensure = "Present"
     }
@@ -19,7 +19,7 @@ function Get-TargetResource
         Ensure = $ensure
         PackageName = $PackageName
         Version = $versionInfo
-    }    
+    }
 }
 
 function Set-TargetResource
@@ -62,10 +62,10 @@ function Set-TargetResource
     if($PackageParameters){
         $parameters += "-packageParameters"
         $parameters += "$PackageParameters"
-    }    
+    }
 
     # Make sure the  chocolatey output is captured, used write-host :(
-    $result = Select-WriteHost {& "c:\ProgramData\chocolatey\chocolateyinstall\chocolatey.cmd" $parameters}
+    $result = Select-WriteHost {& "$env:ChocolateyInstall\chocolateyinstall\chocolatey.cmd" $parameters}
 
     Write-Verbose "Chocolatey result: $result"
 }
@@ -95,7 +95,7 @@ function Test-TargetResource
 		Write-Verbose "Not found"
         return $false
     }
-	
+
 	Write-Verbose "found"
 	return $true
 }
@@ -104,7 +104,7 @@ function Get-InstalledVersion
 {
     param([string]$PackageName)
 
-    $choco = "c:\ProgramData\chocolatey\chocolateyinstall\chocolatey.ps1"
+    $choco = "$env:ChocolateyInstall\chocolateyinstall\chocolatey.ps1"
 
     # find installed version
     $versionInfo = &$choco version $PackageName
@@ -120,13 +120,13 @@ function Select-WriteHost
    param(
      [Parameter(ValueFromPipeline = $true, ParameterSetName = 'FromPipeline')]
      [object] $InputObject,
- 
+
      [Parameter(Mandatory = $true, ParameterSetName = 'FromScriptblock', Position = 0)]
      [ScriptBlock] $ScriptBlock,
- 
+
      [switch] $Quiet
    )
- 
+
    begin
    {
      function Cleanup
@@ -134,13 +134,13 @@ function Select-WriteHost
        # clear out our proxy version of write-host
        remove-item function:write-host -ea 0
      }
- 
+
      function ReplaceWriteHost([switch] $Quiet, [string] $Scope)
      {
          # create a proxy for write-host
          $metaData = New-Object System.Management.Automation.CommandMetaData (Get-Command 'Microsoft.PowerShell.Utility\Write-Host')
          $proxy = [System.Management.Automation.ProxyCommand]::create($metaData)
- 
+
          # change its behavior
          $content = if($quiet)
                     {
@@ -151,14 +151,14 @@ function Select-WriteHost
                     {
                        # in noisy mode, pass input to the pipeline, but allow real write-host to process as well
                        $proxy -replace '($steppablePipeline.Process)', '$Object; $1'
-                    }  
- 
+                    }
+
          # load our version into the specified scope
          Invoke-Expression "function ${scope}:Write-Host { $content }"
      }
- 
+
      Cleanup
- 
+
      # if we are running at the end of a pipeline, need to immediately inject our version
      #    into global scope, so that everybody else in the pipeline uses it.
      #    This works great, but dangerous if we don't clean up properly.
@@ -167,7 +167,7 @@ function Select-WriteHost
         ReplaceWriteHost -Quiet:$quiet -Scope 'global'
      }
    }
- 
+
    process
    {
       # if a scriptblock was passed to us, then we can declare
@@ -185,11 +185,11 @@ function Select-WriteHost
          $InputObject
       }
    }
- 
+
    end
    {
       Cleanup
-   }  
+   }
 }
 
 Export-ModuleMember -Function *-TargetResource
